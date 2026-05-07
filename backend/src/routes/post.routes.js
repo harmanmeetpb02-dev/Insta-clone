@@ -24,6 +24,11 @@ postRouter.get('/details/:postId', authMiddleware, postcontroller.getpostcontrol
 postRouter.post('/like/:postId', authMiddleware, postcontroller.likepostcontroller)
 
 
+postRouter.post('/unlike/:postId', authMiddleware, postcontroller.unlikepostcontroller)
+
+postRouter.post('/comment/:postId', authMiddleware, postcontroller.commentpostcontroller)
+
+
 module.exports = postRouter
 
 
