@@ -3,119 +3,107 @@ const jwt = require("jsonwebtoken")
 const UserModel = require("../modules/user.model")
 require('dotenv').config();
 
+async function registercontroller(req, res) {
+    try {
+        const { email, password, bio, username } = req.body
 
- async function registercontroller (req, res) {
-   const { email, password, bio, username } = req.body
+        const isuserExist = await UserModel.findOne({
+            $or: [{ email }, { username }]
+        })
 
-   const isuserExistbyemail = await UserModel.findOne({ email })
+        if (isuserExist) {
+            return res.status(409).json({
+                message: isuserExist.email === email ? "Email already exists" : "Username already exists"
+            })
+        }
 
+        const hash = await bcrypt.hash(password, 10)
 
-   $or: [
-      { email },
-      { username }
+        const user = await UserModel.create({
+            email,
+            password: hash,
+            bio,
+            username
+        })
 
-   ]
+        const token = jwt.sign({
+            id: user._id,
+            username: user.username
+        }, process.env.JWT_SECRET)
 
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax'
+        })
 
-   if (isuserExistbyemail) {
-      return res.status(409)
-         .json({
-            message: "user already exist" + (isuserExistbyemail == email ? "Email already exist" : "Username already Exist")
-
-         })
-   }
-
-   const hash = await bcrypt.hash(password, 10)
-
-   const user = await UserModel.create({
-
-      email, password:hash, bio, username
-
-   })
-
-
-   const token = jwt.sign({
-      id: user._id,
-      username: user.username
-   }, process.env.JWT_SECRET, )
-
-
-   res.cookie("token", token,{
-      httpOnly: true
-   })
-
-   res.status(201).json({
-
-      message: 'user succesfully registered',
-
-      user: {
-         email: user.email,
-         username: user.username,
-         bio: user.bio
-
-      }
-   })
-
-}
-
-
-async function logincontroller(req,res) {
-   const { email, password, username } = req.body
-   
-   const user = await UserModel.findOne({ 
-
-      $or:[
-         {username:username},
-         {email:email}
-      ]
-    })
-
-
-    if(!user){
-      return res.status(404).json({
-         message: "user not found"
-      })
-
+        res.status(201).json({
+            message: 'User successfully registered',
+            user: {
+                email: user.email,
+                username: user.username,
+                bio: user.bio
+            }
+        })
+    } catch (error) {
+        console.error("Register Error:", error)
+        res.status(500).json({
+            message: error.message || "Internal server error"
+        })
     }
-
-
-    const userpassword = await bcrypt.compare(password, user.password);
-
-
-
-if(!userpassword){
-   return res.status(401).json({
-      message:"passwod is invalid"
-   })
 }
 
+async function logincontroller(req, res) {
+    try {
+        const { email, password, username } = req.body
 
-  const token = jwt.sign({
-      id: user._id,
-      username: user.username
-   }, process.env.JWT_SECRET, )
+        const user = await UserModel.findOne({
+            $or: [
+                { username: username },
+                { email: email }
+            ]
+        })
 
+        if (!user) {
+            return res.status(404).json({
+                message: "User not found"
+            })
+        }
 
+        const isPasswordCorrect = await bcrypt.compare(password, user.password);
 
-   res.cookie("token", token)
+        if (!isPasswordCorrect) {
+            return res.status(401).json({
+                message: "Password is invalid"
+            })
+        }
 
+        const token = jwt.sign({
+            id: user._id,
+            username: user.username
+        }, process.env.JWT_SECRET)
 
-   res.status(201).json({
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax'
+        })
 
-      message: 'user succesfully login',
-
-      user: {
-         email: user.email,
-         username: user.username,
-         bio: user.bio
-
-      }
-   })
-
-
+        res.status(200).json({
+            message: 'User successfully logged in',
+            user: {
+                email: user.email,
+                username: user.username,
+                bio: user.bio
+            }
+        })
+    } catch (error) {
+        console.error("Login Error:", error)
+        res.status(500).json({
+            message: error.message || "Internal server error"
+        })
+    }
 }
-
-
 
 module.exports = {
     registercontroller,
