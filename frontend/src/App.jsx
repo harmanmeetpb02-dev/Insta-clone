@@ -1,4 +1,5 @@
 import AppRoutes from './AppRoutes'
+import "./style.scss";
 
 function App() {
   return (
