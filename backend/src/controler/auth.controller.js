@@ -105,7 +105,32 @@ async function logincontroller(req, res) {
     }
 }
 
+async function getMeController(req, res) {
+    try {
+        const user = await UserModel.findById(req.user.id)
+
+        if (!user) {
+            return res.status(404).json({
+                message: "User not found"
+            })
+        }
+
+        res.status(200).json({
+            email: user.email,
+            username: user.username,
+            bio: user.bio
+        })
+    } catch (error) {
+        console.error("Get Me Error:", error)
+        res.status(500).json({
+            message: error.message || "Internal server error"
+        })
+    }
+}
+
+
 module.exports = {
     registercontroller,
-    logincontroller
+    logincontroller,
+    getMeController
 }

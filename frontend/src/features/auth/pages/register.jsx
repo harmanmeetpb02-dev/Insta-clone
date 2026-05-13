@@ -1,12 +1,10 @@
 import React from 'react'
-import { Link } from 'react-router-dom'
-import axios from 'axios'
-
-
-
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../hook/use.auth'
 
 export const Register = () => {
-
+    const navigate = useNavigate()
+    const { handleRegister } = useAuth()
     const [username , setUsername] = React.useState('')
     const [email , setEmail] = React.useState('')
     const [password , setPassword] = React.useState('')
@@ -14,17 +12,13 @@ export const Register = () => {
 
     async function handleSubmit(e) {
         e.preventDefault()
+
         try {
-            const res = await axios.post('http://localhost:3000/api/auth/register', {
-                username,
-                email,
-                password
-            },{
-                withCredentials: true
-            })
-            console.log(res.data)
+            await handleRegister(username, email, password)
+            console.log("Registration successful")
+            navigate('/login')
         } catch (err) {
-            console.log(err)
+            alert("Registration failed: " + (err.response?.data?.message || "Something went wrong"))
         }
     }
 
